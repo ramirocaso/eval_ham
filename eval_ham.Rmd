@@ -1,0 +1,105 @@
+---
+title: 'Evaluaciones Curso HAM'
+author: "Ramiro Casó - Incae Business School"
+date: "6/28/2021"
+output: html_document
+---
+
+# Intro Final
+
+El presente documento es un reporte que integra las evaluaciones realizadas por los participantes del curso de Habilidades Analíticas para Mercadeo 
+
+Para la elaboración de reporte se procedió a exportar la data de la plataforma Canvas, limpiar y re-ordenarla, eliminando columnas sin información y acomodando los títulos para que se leyeran con claridad. 
+
+Adicionalmente, se crearon 4 variables nuevas. 
+
+1. **Semana:** identificación de la semana evaluada.
+2. **Edición:** identificación de la edición evaluada. Esta columna servirá para integrar más adelante las evaluaciones de todos los certificados.
+3. **Efectividad Módulo Numérica:** Transformación a nivel de medida de intervalo de la variable "qué tan efectivo fue el módulo", en donde 5 indica "muy efectivo" y 1 indica "muy inefectivo".
+4. **Efectividad AA/Webinar Numerica:** Transformación a nivel de medida de intervalo de la variable "efectividad del Office Hour o Webinar", en donde 5 indica "muy efectivo" y 1 indica "muy inefectivo"
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(dplyr)
+library(knitr)
+```
+
+```{r carga de datos, echo=TRUE, message=FALSE, warning=FALSE, paged.print=TRUE}
+sem_2_ed1 <- read_csv("Ev-Sem2-Ed1.csv")
+
+```
+
+```{r limpiaza de datos, echo=TRUE}
+# Acá limpiamos los datos
+
+sem_2_ed1_clean <-select(sem_2_ed1, c(1,2,3,7,9,11,13)) %>% 
+  mutate(Semana = "2", Edición = "1")
+
+
+
+```
+
+
+```{r Sustitución nombres columnas, echo=TRUE}
+
+#Antes de unir las filas, tenemos que asegurarnos que las columnas tienen todas el mismo nombre. 
+
+names(sem_2_ed1_clean) [4] <-"En términos de aprendizaje ¿qué tan efectivo fue este módulo?" 
+names(sem_2_ed1_clean) [5] <-"Efectividad de Asesoría Académica o webinar" 
+names(sem_2_ed1_clean) [6] <-"¿Qué le gustó del módulo?" 
+names(sem_2_ed1_clean) [7] <-"¿Cómo podemos mejorar?" 
+```
+
+
+```{r Columnas numericas, echo=TRUE}
+
+# El siguiente paso es agregar dos columnas nuevas con las escalas de satisfacción en nivel de medida de intervalo o numéricas. 
+
+sem_2_ed1_clean <- sem_2_ed1_clean %>% 
+  mutate("Efectividad Modulo Num" = case_when(`En términos de aprendizaje ¿qué tan efectivo fue este módulo?` == "Muy efectivo" ~ 5,
+                              `En términos de aprendizaje ¿qué tan efectivo fue este módulo?` == "Efectivo" ~ 4,
+                                `En términos de aprendizaje ¿qué tan efectivo fue este módulo?` == "Neutral" ~ 3,
+                                `En términos de aprendizaje ¿qué tan efectivo fue este módulo?` == "Inefectivo" ~ 2,
+                                  `En términos de aprendizaje ¿qué tan efectivo fue este módulo?` == "Muy inefectivo" ~ 1)) %>%
+  mutate("Efectividad OH-Webinar Num" = case_when(`Efectividad de Asesoría Académica o webinar` == "Muy efectivo" ~ 5,
+                              `Efectividad de Asesoría Académica o webinar` == "Efectivo" ~ 4,
+                                `Efectividad de Asesoría Académica o webinar` == "Neutral" ~ 3,
+                                `Efectividad de Asesoría Académica o webinar` == "Inefectivo" ~ 2,
+                                  `Efectividad de Asesoría Académica o webinar` == "Muy inefectivo" ~ 1))
+
+
+
+```
+
+
+
+```{r row bind, echo=TRUE, message=TRUE, paged.print=TRUE}
+# Ahora pegamos todas las filas
+e_totales_ed1 <- rbind(sem_2_ed1_clean)
+```
+
+## Estadístícos descriptivos. 
+
+En la tabla que sigue se presentan los promedios y las deviaciones estándar para las evaluaciones del módulo y de las asesorías académicas / webinars. 
+
+
+```{r Descriptivos, echo=TRUE}
+descriptivos <- e_totales_ed1 %>%
+  group_by(Semana) %>%
+  summarise("efectividad modulo" = mean(`Efectividad Modulo Num`, na.rm = TRUE),
+            "efectividad AA/Webinar" = mean(`Efectividad OH-Webinar Num`, na.rm = TRUE),
+            "SD modulo" = sd(`Efectividad Modulo Num`, na.rm = TRUE), 
+            "SD AA/Webinar"= sd(`Efectividad OH-Webinar Num`, na.rm = TRUE))
+
+kable(descriptivos, caption = "Promedio y desviación de evaluaciones, por semana", align = "ccccc", "pipe")
+```
+
+Finalmente, exportamos lo trabajado en un archivo CSV para poder visualizar tranquilos en Tableau
+
+
+```{r export, echo=TRUE}
+write_csv(e_totales_ed1, "e_totales_ed1.csv")
+write_excel_csv(e_totales_ed1,"e_totales_ed1.xls")
+```
